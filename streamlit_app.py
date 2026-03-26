@@ -12,10 +12,6 @@ st.caption("Interaktive Planung für interne Steuerung sowie Bank- und Investore
 
 tab1, tab2 = st.tabs(["Interne Planung", "Bank / Investoren"])
 
-# =========================
-# GEMEINSAME EINGABEN
-# =========================
-
 with tab1:
     st.header("Interne Planung")
 
@@ -62,8 +58,9 @@ with tab1:
 
         start_liquiditaet = st.number_input("Verfügbare Startliquidität (€)", min_value=0, value=70000, step=1000)
 
+
 # =========================
-# BERECHNUNGEN
+# BERECHNUNGSLOGIK
 # =========================
 
 einmalkosten_gesamt = (
@@ -91,6 +88,7 @@ monatliche_fixkosten_gesamt = (
     + sonstige_fixkosten
 )
 
+
 def mitglieder_im_monat(monat, start, ziel, ramp_monate):
     if ramp_monate <= 1:
         return ziel
@@ -99,7 +97,12 @@ def mitglieder_im_monat(monat, start, ziel, ramp_monate):
     steigung = (ziel - start) / (ramp_monate - 1)
     return round(start + steigung * (monat - 1), 2)
 
-daten = []
+
+# =========================
+# 12-MONATS-PLAN DYNAMISCH
+# =========================
+
+daten_12m = []
 liquiditaet = start_liquiditaet - einmalkosten_gesamt
 
 for monat in range(1, 13):
@@ -109,17 +112,20 @@ for monat in range(1, 13):
         ziel_mitglieder_pro_camper,
         ramp_up_monate
     )
+
     gesamtmitglieder = mitglieder_pc * anzahl_camper
     umsatz_pro_camper = mitglieder_pc * beitrag_pro_mitglied
     gesamtumsatz = umsatz_pro_camper * anzahl_camper
+
     camperkosten_gesamt = gesamtkosten_pro_camper * anzahl_camper
     gesamtkosten = camperkosten_gesamt + monatliche_fixkosten_gesamt
+
     gewinn = gesamtumsatz - gesamtkosten
     liquiditaet += gewinn
 
-    daten.append({
+    daten_12m.append({
         "Monat": f"M{monat}",
-        "Mitglieder_pro_Camper": mitglieder_pc,
+        "Mitglieder pro Camper": mitglieder_pc,
         "Gesamtmitglieder": gesamtmitglieder,
         "Umsatz": gesamtumsatz,
         "Kosten": gesamtkosten,
@@ -127,16 +133,25 @@ for monat in range(1, 13):
         "Liquidität": liquiditaet
     })
 
-df_12m = pd.DataFrame(daten)
+df_12m = pd.DataFrame(daten_12m)
 
 umsatz_jahr_1 = df_12m["Umsatz"].sum()
 kosten_jahr_1 = df_12m["Kosten"].sum()
 gewinn_jahr_1 = df_12m["Gewinn"].sum()
 
-# Vereinfachte 3-Jahres-Planung:
+min_liquiditaet = df_12m["Liquidität"].min()
+liquiditaet_ende_jahr_1 = df_12m["Liquidität"].iloc[-1]
+
+# Funding Gap: falls die Mindestliquidität unter 0 fällt
+funding_gap = abs(min_liquiditaet) if min_liquiditaet < 0 else 0
+
+
+# =========================
+# 3-JAHRES-PLAN DYNAMISCH
+# =========================
 # Jahr 1 = Ramp-up
-# Jahr 2 = volles Zielniveau
-# Jahr 3 = Jahr 2 + 5% Umsatzwachstum, 3% Kostenwachstum
+# Jahr 2 = voller Zielzustand
+# Jahr 3 = Wachstum auf Basis der aktuellen Annahmen
 
 voller_monatsumsatz = anzahl_camper * ziel_mitglieder_pro_camper * beitrag_pro_mitglied
 volle_monatskosten = (anzahl_camper * gesamtkosten_pro_camper) + monatliche_fixkosten_gesamt
@@ -156,11 +171,23 @@ df_3y = pd.DataFrame({
     "Gewinn": [gewinn_jahr_1, gewinn_jahr_2, gewinn_jahr_3]
 })
 
-break_even_mitglieder = (
-    gesamtkosten_pro_camper + (monatliche_fixkosten_gesamt / anzahl_camper)
-) / beitrag_pro_mitglied if beitrag_pro_mitglied > 0 else 0
 
-# Szenariovergleich
+# =========================
+# BREAK-EVEN
+# =========================
+
+if beitrag_pro_mitglied > 0:
+    break_even_mitglieder = (
+        gesamtkosten_pro_camper + (monatliche_fixkosten_gesamt / anzahl_camper)
+    ) / beitrag_pro_mitglied
+else:
+    break_even_mitglieder = 0
+
+
+# =========================
+# SZENARIOVERGLEICH
+# =========================
+
 szenarien = {
     "Worst Case": 15,
     "Realistisch": 25,
@@ -181,30 +208,48 @@ for name, mitglieder_szenario in szenarien.items():
 
 df_szenario = pd.DataFrame(szenario_daten)
 
+
 # =========================
-# TAB 1 - INTERNE SICHT
+# TAB 1 - INTERNE PLANUNG
 # =========================
 
 with tab1:
     st.subheader("Ergebnisse interne Planung")
 
-    c1, c2, c3 = st.columns(3)
+    c1, c2, c3, c4 = st.columns(4)
     c1.metric("Kapitalbedarf Start", f"€{einmalkosten_gesamt:,.0f}")
     c2.metric("Break-even Mitglieder / Camper", f"{break_even_mitglieder:.1f}")
-    c3.metric("Liquidität Ende Jahr 1", f"€{df_12m['Liquidität'].iloc[-1]:,.0f}")
+    c3.metric("Mindestliquidität", f"€{min_liquiditaet:,.0f}")
+    c4.metric("Funding Gap", f"€{funding_gap:,.0f}")
+
+    c5, c6, c7 = st.columns(3)
+    c5.metric("Umsatz Jahr 1", f"€{umsatz_jahr_1:,.0f}")
+    c6.metric("Kosten Jahr 1", f"€{kosten_jahr_1:,.0f}")
+    c7.metric("Gewinn Jahr 1", f"€{gewinn_jahr_1:,.0f}")
 
     st.markdown("---")
 
-    c4, c5, c6 = st.columns(3)
-    c4.metric("Umsatz Jahr 1", f"€{umsatz_jahr_1:,.0f}")
-    c5.metric("Kosten Jahr 1", f"€{kosten_jahr_1:,.0f}")
-    c6.metric("Gewinn Jahr 1", f"€{gewinn_jahr_1:,.0f}")
+    if funding_gap > 0:
+        st.error(
+            f"Die Liquidität fällt im Verlauf unter 0 €. "
+            f"Zusätzlicher Finanzierungsbedarf: ca. €{funding_gap:,.0f}."
+        )
+    elif min_liquiditaet < 10000:
+        st.warning(
+            "Die Liquidität bleibt zwar positiv, ist aber knapp. "
+            "Für ein Bankgespräch sollte ein zusätzlicher Sicherheitspuffer eingeplant werden."
+        )
+    else:
+        st.success(
+            "Die Liquidität bleibt im gesamten Verlauf stabil positiv."
+        )
 
-    st.subheader("12-Monats-Verlauf")
+    st.subheader("12-Monats-Plan")
     st.dataframe(df_12m, use_container_width=True)
 
     st.subheader("3-Jahres-Plan")
     st.dataframe(df_3y, use_container_width=True)
+
 
 # =========================
 # TAB 2 - BANK / INVESTOREN
@@ -217,11 +262,10 @@ with tab2:
     k1.metric("Kapitalbedarf Start", f"€{einmalkosten_gesamt:,.0f}")
     k2.metric("Break-even Mitglieder", f"{break_even_mitglieder:.1f}")
     k3.metric("Gewinn Jahr 1", f"€{gewinn_jahr_1:,.0f}")
-    k4.metric("Liquidität Ende Jahr 1", f"€{df_12m['Liquidität'].iloc[-1]:,.0f}")
+    k4.metric("Funding Gap", f"€{funding_gap:,.0f}")
 
     st.markdown("---")
 
-    # Chart 1: Umsatz / Kosten / Gewinn pro Monat
     st.subheader("Monatlicher Verlauf: Umsatz, Kosten und Gewinn")
     fig1, ax1 = plt.subplots(figsize=(10, 4))
     ax1.bar(df_12m["Monat"], df_12m["Umsatz"], label="Umsatz")
@@ -231,7 +275,6 @@ with tab2:
     ax1.legend()
     st.pyplot(fig1)
 
-    # Chart 2: Liquiditätsverlauf
     st.subheader("Liquiditätsverlauf über 12 Monate")
     fig2, ax2 = plt.subplots(figsize=(10, 4))
     ax2.plot(df_12m["Monat"], df_12m["Liquidität"], marker="o")
@@ -239,7 +282,6 @@ with tab2:
     ax2.set_ylabel("€")
     st.pyplot(fig2)
 
-    # Chart 3: 3-Jahres-Plan
     st.subheader("3-Jahres-Plan: Umsatz, Kosten und Gewinn")
     fig3, ax3 = plt.subplots(figsize=(10, 4))
     x = range(len(df_3y))
@@ -252,7 +294,6 @@ with tab2:
     ax3.legend()
     st.pyplot(fig3)
 
-    # Chart 4: Kostenstruktur
     st.subheader("Monatliche Kostenstruktur")
     kosten_labels = [
         "Leasing",
@@ -284,27 +325,32 @@ with tab2:
     ax4.axis("equal")
     st.pyplot(fig4)
 
-    # Chart 5: Szenariovergleich
-    st.subheader("Szenariovergleich")
+    st.subheader("Szenariovergleich Gewinn / Monat")
     fig5, ax5 = plt.subplots(figsize=(10, 4))
     ax5.bar(df_szenario["Szenario"], df_szenario["Gewinn"])
     ax5.axhline(0, linestyle="--")
-    ax5.set_ylabel("Gewinn / Monat (€)")
+    ax5.set_ylabel("€")
     st.pyplot(fig5)
 
     st.subheader("Kurze Bewertung")
-    if gewinn_jahr_1 > 0 and df_12m["Liquidität"].min() > 0:
+
+    if funding_gap > 0:
+        st.error(
+            f"Das Modell zeigt einen zusätzlichen Finanzierungsbedarf von ca. €{funding_gap:,.0f}. "
+            "Vor einem Bankgespräch sollte dieser Betrag aktiv adressiert werden."
+        )
+    elif gewinn_jahr_1 > 0 and min_liquiditaet > 0:
         st.success(
-            "Das Modell ist unter den aktuellen Annahmen bankfähig darstellbar: "
+            "Das Modell ist unter den aktuellen Annahmen schlüssig darstellbar: "
             "positiver Ergebnisverlauf, positiver Liquiditätsverlauf und klarer Break-even."
         )
     elif gewinn_jahr_1 > 0:
         st.warning(
-            "Das Modell ist operativ profitabel, zeigt jedoch temporäre Liquiditätsrisiken. "
-            "Für das Bankgespräch sollte die Anfangsfinanzierung oder Liquiditätsreserve erhöht werden."
+            "Das Modell ist operativ profitabel, zeigt jedoch eine enge Liquidität. "
+            "Ein höherer Startpuffer wäre für das Bankgespräch sinnvoll."
         )
     else:
         st.error(
             "Das Modell ist unter den aktuellen Annahmen noch nicht überzeugend. "
-            "Vor einem Bankgespräch sollten Preis, Mitgliederaufbau oder Kostenstruktur nachgeschärft werden."
+            "Preis, Mitgliederaufbau oder Kostenstruktur sollten vor dem Bankgespräch nachgeschärft werden."
         )
