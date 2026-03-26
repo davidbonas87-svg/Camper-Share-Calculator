@@ -48,24 +48,54 @@ with tab_intern:
             step=1
         )
 
-        st.subheader("3. Laufende Kosten")
+        st.subheader("3. Laufende Kosten pro Camper")
 
-        monatliche_kosten_pro_camper = st.number_input(
-            "Monatliche Kosten pro Camper (€)",
+        leasing_pro_camper = st.number_input(
+            "Leasing pro Camper (€)",
             min_value=0,
-            value=2200,
+            value=1100,
             step=50
         )
 
-        monatliche_fixkosten_gesamt = st.number_input(
-            "Monatliche Fixkosten gesamt (€)",
+        versicherung_pro_camper = st.number_input(
+            "Versicherung pro Camper (€)",
             min_value=0,
-            value=3300,
+            value=250,
+            step=10
+        )
+
+        wartung_reinigung_pro_camper = st.number_input(
+            "Wartung / Reinigung pro Camper (€)",
+            min_value=0,
+            value=300,
+            step=10
+        )
+
+        st.subheader("4. Monatliche Fixkosten gesamt")
+
+        plattform_software = st.number_input(
+            "Plattform / Software (€)",
+            min_value=0,
+            value=1800,
+            step=50
+        )
+
+        marketing = st.number_input(
+            "Marketing (€)",
+            min_value=0,
+            value=1000,
+            step=50
+        )
+
+        sonstige_fixkosten = st.number_input(
+            "Sonstige Fixkosten (€)",
+            min_value=0,
+            value=500,
             step=50
         )
 
     with col2:
-        st.subheader("4. Einmalkosten")
+        st.subheader("5. Einmalkosten")
 
         plattform_entwicklung = st.number_input(
             "Plattformentwicklung (€)",
@@ -122,6 +152,18 @@ einmalkosten_gesamt = (
     + sonstige_einmalkosten
 )
 
+monatliche_kosten_pro_camper = (
+    leasing_pro_camper
+    + versicherung_pro_camper
+    + wartung_reinigung_pro_camper
+)
+
+monatliche_fixkosten_gesamt = (
+    plattform_software
+    + marketing
+    + sonstige_fixkosten
+)
+
 ziel_auslastung = auslastung_prozent / 100.0
 start_auslastung = min(0.20, ziel_auslastung)
 
@@ -166,7 +208,6 @@ umsatz_jahr_1 = float(df_12m["Gesamtumsatz"].sum())
 kosten_jahr_1 = float(df_12m["Gesamtkosten"].sum())
 gewinn_jahr_1 = float(df_12m["Gewinn / Verlust"].sum())
 
-# Zielzustand
 effektiver_zielumsatz_pro_camper = ZIELUMSATZ_PRO_CAMPER_BEI_100 * ziel_auslastung
 zielumsatz_gesamt_monat = ziel_camper * effektiver_zielumsatz_pro_camper
 zielkosten_gesamt_monat = (ziel_camper * monatliche_kosten_pro_camper) + monatliche_fixkosten_gesamt
@@ -197,6 +238,13 @@ df_3y = pd.DataFrame({
 
 with tab_intern:
     st.markdown("---")
+    st.subheader("Automatisch berechnete Summen")
+
+    s1, s2, s3 = st.columns(3)
+    s1.metric("Monatliche Kosten pro Camper", f"€{monatliche_kosten_pro_camper:,.0f}")
+    s2.metric("Monatliche Fixkosten gesamt", f"€{monatliche_fixkosten_gesamt:,.0f}")
+    s3.metric("Einmalkosten gesamt", f"€{einmalkosten_gesamt:,.0f}")
+
     st.subheader("Ergebnisse")
 
     k1, k2, k3, k4, k5, k6 = st.columns(6)
