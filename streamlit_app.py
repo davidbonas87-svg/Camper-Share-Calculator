@@ -3,66 +3,131 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 st.set_page_config(
-    page_title="Camper Share Finanzmodell",
+    page_title="Camper Share Bankversion",
     layout="wide"
 )
 
-st.title("Camper Share Finanzmodell")
-st.caption("Interaktive Planung für interne Steuerung sowie Bank- und Investorengespräche")
+st.title("Camper Share – Interne Planung (Bankversion)")
+st.caption("Vereinfachtes Modell für konservativen Start, Liquiditätsverlauf und 3-Jahres-Plan")
 
-tab1, tab2 = st.tabs(["Interne Planung", "Bank / Investoren"])
+st.subheader("Eingaben")
 
-with tab1:
-    st.header("Interne Planung")
+col1, col2 = st.columns(2)
 
-    col1, col2 = st.columns([1, 1])
+with col1:
+    st.markdown("### 1. Flottenaufbau")
 
-    with col1:
-        st.subheader("1. Grundannahmen")
+    start_camper = st.number_input(
+        "Start-Camper",
+        min_value=1,
+        value=2,
+        step=1
+    )
 
-        anzahl_camper = st.number_input("Anzahl Camper", min_value=1, value=4, step=1)
-        ziel_mitglieder_pro_camper = st.number_input("Ziel-Mitglieder pro Camper", min_value=1, value=30, step=1)
-        beitrag_pro_mitglied = st.number_input("Durchschnittlicher Monatsbeitrag pro Mitglied (€)", min_value=0, value=200, step=10)
+    ziel_camper = st.number_input(
+        "Ziel-Camper",
+        min_value=1,
+        value=4,
+        step=1
+    )
 
-        st.subheader("2. Mitglieder-Ramp-up")
+    monat_erweiterung = st.number_input(
+        "Monat der Erweiterung auf Ziel-Camper",
+        min_value=1,
+        max_value=12,
+        value=7,
+        step=1
+    )
 
-        start_mitglieder_pro_camper = st.number_input("Start-Mitglieder pro Camper im Monat 1", min_value=0, value=8, step=1)
-        ramp_up_monate = st.number_input("Monate bis Ziel-Mitglieder erreicht werden", min_value=1, value=8, step=1)
+    st.markdown("### 2. Umsatzlogik")
 
-        st.subheader("3. Einmalkosten")
+    zielumsatz_pro_camper = st.number_input(
+        "Zielumsatz pro Camper / Monat bei 100 % Auslastung (€)",
+        min_value=0,
+        value=6000,
+        step=100
+    )
 
-        plattform_entwicklung = st.number_input("Plattformentwicklung (€)", min_value=0, value=30000, step=1000)
-        schluesselbox_hardware = st.number_input("Schlüsselbox Hardware (€)", min_value=0, value=2500, step=100)
-        branding_recht_website = st.number_input("Branding / Recht / Website (€)", min_value=0, value=5000, step=500)
-        setup_infrastruktur = st.number_input("Standort- / Infrastruktur-Setup (€)", min_value=0, value=5000, step=500)
-        reserve_puffer = st.number_input("Reserve / Puffer (€)", min_value=0, value=10000, step=500)
+    auslastung_prozent = st.slider(
+        "Ziel-Auslastung pro Camper (%)",
+        min_value=0,
+        max_value=100,
+        value=80,
+        step=5
+    )
 
-    with col2:
-        st.subheader("4. Monatliche Kosten pro Camper")
+    ramp_up_monate = st.number_input(
+        "Ramp-up Monate bis Ziel-Auslastung",
+        min_value=1,
+        value=8,
+        step=1
+    )
 
-        leasing = st.number_input("Leasing pro Camper (€)", min_value=0, value=1100, step=50)
-        versicherung = st.number_input("Versicherung pro Camper (€)", min_value=0, value=250, step=10)
-        wartung = st.number_input("Wartung pro Camper (€)", min_value=0, value=200, step=10)
-        standort = st.number_input("Standort / Infrastruktur pro Camper (€)", min_value=0, value=200, step=10)
-        software_camper = st.number_input("Software pro Camper (€)", min_value=0, value=150, step=10)
-        variable_kosten = st.number_input("Variable Kosten pro Camper (€)", min_value=0, value=400, step=10)
+    start_liquiditaet = st.number_input(
+        "Startliquidität (€)",
+        min_value=0,
+        value=70000,
+        step=1000
+    )
 
-        st.subheader("5. Monatliche Fixkosten gesamt")
+with col2:
+    st.markdown("### 3. Einmalkosten")
 
-        plattform_fixkosten = st.number_input("Plattform-Fixkosten gesamt (€)", min_value=0, value=2000, step=50)
-        buchhaltung = st.number_input("Buchhaltung / Steuerberater (€)", min_value=0, value=300, step=50)
-        marketing = st.number_input("Marketing gesamt (€)", min_value=0, value=800, step=50)
-        sonstige_fixkosten = st.number_input("Sonstige Fixkosten gesamt (€)", min_value=0, value=200, step=50)
+    plattform_entwicklung = st.number_input(
+        "Plattformentwicklung (€)",
+        min_value=0,
+        value=30000,
+        step=1000
+    )
 
-        st.subheader("6. Liquidität")
+    schluesselbox_hardware = st.number_input(
+        "Schlüsselbox Hardware (€)",
+        min_value=0,
+        value=2500,
+        step=100
+    )
 
-        start_liquiditaet = st.number_input("Verfügbare Startliquidität (€)", min_value=0, value=70000, step=1000)
+    branding_recht_website = st.number_input(
+        "Branding / Recht / Website (€)",
+        min_value=0,
+        value=5000,
+        step=500
+    )
 
+    setup_infrastruktur = st.number_input(
+        "Standort- / Infrastruktur-Setup (€)",
+        min_value=0,
+        value=5000,
+        step=500
+    )
 
-# =========================
-# BERECHNUNGSLOGIK
-# =========================
+    reserve_puffer = st.number_input(
+        "Reserve / Puffer (€)",
+        min_value=0,
+        value=10000,
+        step=500
+    )
 
+    st.markdown("### 4. Laufende Kosten")
+
+    monatliche_kosten_pro_camper = st.number_input(
+        "Monatliche Kosten pro Camper (€)",
+        min_value=0,
+        value=2200,
+        step=50
+    )
+
+    monatliche_fixkosten_gesamt = st.number_input(
+        "Monatliche Fixkosten gesamt (€)",
+        min_value=0,
+        value=3300,
+        step=50
+    )
+
+# Schutzlogik
+ziel_camper = max(ziel_camper, start_camper)
+
+# Abgeleitete Grundwerte
 einmalkosten_gesamt = (
     plattform_entwicklung
     + schluesselbox_hardware
@@ -71,286 +136,180 @@ einmalkosten_gesamt = (
     + reserve_puffer
 )
 
-fixkosten_pro_camper = (
-    leasing
-    + versicherung
-    + wartung
-    + standort
-    + software_camper
-)
+ziel_auslastung = auslastung_prozent / 100.0
+start_auslastung = min(0.20, ziel_auslastung)  # konservativer Start bei max. 20% oder weniger
 
-gesamtkosten_pro_camper = fixkosten_pro_camper + variable_kosten
+def camper_im_monat(monat: int, start: int, ziel: int, erweiterungsmonat: int) -> int:
+    if monat < erweiterungsmonat:
+        return start
+    return ziel
 
-monatliche_fixkosten_gesamt = (
-    plattform_fixkosten
-    + buchhaltung
-    + marketing
-    + sonstige_fixkosten
-)
-
-
-def mitglieder_im_monat(monat, start, ziel, ramp_monate):
+def auslastung_im_monat(monat: int, start_a: float, ziel_a: float, ramp_monate: int) -> float:
     if ramp_monate <= 1:
-        return ziel
+        return ziel_a
     if monat >= ramp_monate:
-        return ziel
-    steigung = (ziel - start) / (ramp_monate - 1)
-    return round(start + steigung * (monat - 1), 2)
+        return ziel_a
+    steigung = (ziel_a - start_a) / (ramp_monate - 1)
+    return start_a + steigung * (monat - 1)
 
-
-# =========================
-# 12-MONATS-PLAN DYNAMISCH
-# =========================
-
+# 12-Monats-Plan
 daten_12m = []
 liquiditaet = start_liquiditaet - einmalkosten_gesamt
 
 for monat in range(1, 13):
-    mitglieder_pc = mitglieder_im_monat(
+    camper_anzahl = camper_im_monat(
         monat,
-        start_mitglieder_pro_camper,
-        ziel_mitglieder_pro_camper,
+        start_camper,
+        ziel_camper,
+        monat_erweiterung
+    )
+
+    auslastung_monat = auslastung_im_monat(
+        monat,
+        start_auslastung,
+        ziel_auslastung,
         ramp_up_monate
     )
 
-    gesamtmitglieder = mitglieder_pc * anzahl_camper
-    umsatz_pro_camper = mitglieder_pc * beitrag_pro_mitglied
-    gesamtumsatz = umsatz_pro_camper * anzahl_camper
+    umsatz_pro_camper_monat = zielumsatz_pro_camper * auslastung_monat
+    gesamtumsatz_monat = camper_anzahl * umsatz_pro_camper_monat
 
-    camperkosten_gesamt = gesamtkosten_pro_camper * anzahl_camper
-    gesamtkosten = camperkosten_gesamt + monatliche_fixkosten_gesamt
+    gesamtkosten_monat = (
+        camper_anzahl * monatliche_kosten_pro_camper
+        + monatliche_fixkosten_gesamt
+    )
 
-    gewinn = gesamtumsatz - gesamtkosten
-    liquiditaet += gewinn
+    gewinn_monat = gesamtumsatz_monat - gesamtkosten_monat
+    liquiditaet += gewinn_monat
 
     daten_12m.append({
         "Monat": f"M{monat}",
-        "Mitglieder pro Camper": mitglieder_pc,
-        "Gesamtmitglieder": gesamtmitglieder,
-        "Umsatz": gesamtumsatz,
-        "Kosten": gesamtkosten,
-        "Gewinn": gewinn,
-        "Liquidität": liquiditaet
+        "Camper": camper_anzahl,
+        "Auslastung %": round(auslastung_monat * 100, 1),
+        "Umsatz pro Camper": round(umsatz_pro_camper_monat, 0),
+        "Gesamtumsatz": round(gesamtumsatz_monat, 0),
+        "Gesamtkosten": round(gesamtkosten_monat, 0),
+        "Gewinn / Verlust": round(gewinn_monat, 0),
+        "Liquidität": round(liquiditaet, 0)
     })
 
 df_12m = pd.DataFrame(daten_12m)
 
-umsatz_jahr_1 = df_12m["Umsatz"].sum()
-kosten_jahr_1 = df_12m["Kosten"].sum()
-gewinn_jahr_1 = df_12m["Gewinn"].sum()
+umsatz_jahr_1 = float(df_12m["Gesamtumsatz"].sum())
+kosten_jahr_1 = float(df_12m["Gesamtkosten"].sum())
+gewinn_jahr_1 = float(df_12m["Gewinn / Verlust"].sum())
 
-min_liquiditaet = df_12m["Liquidität"].min()
-liquiditaet_ende_jahr_1 = df_12m["Liquidität"].iloc[-1]
-
-# Funding Gap: falls die Mindestliquidität unter 0 fällt
+min_liquiditaet = float(df_12m["Liquidität"].min())
+liquiditaet_ende_jahr_1 = float(df_12m["Liquidität"].iloc[-1])
 funding_gap = abs(min_liquiditaet) if min_liquiditaet < 0 else 0
 
+# Break-even
+aktueller_umsatz_pro_camper_bei_ziel = zielumsatz_pro_camper * ziel_auslastung
 
-# =========================
-# 3-JAHRES-PLAN DYNAMISCH
-# =========================
-# Jahr 1 = Ramp-up
-# Jahr 2 = voller Zielzustand
-# Jahr 3 = Wachstum auf Basis der aktuellen Annahmen
+if aktueller_umsatz_pro_camper_bei_ziel > 0:
+    break_even_camper = monatliche_fixkosten_gesamt / max(
+        (aktueller_umsatz_pro_camper_bei_ziel - monatliche_kosten_pro_camper), 1
+    )
+else:
+    break_even_camper = 0
 
-voller_monatsumsatz = anzahl_camper * ziel_mitglieder_pro_camper * beitrag_pro_mitglied
-volle_monatskosten = (anzahl_camper * gesamtkosten_pro_camper) + monatliche_fixkosten_gesamt
+# 3-Jahres-Plan
+# Jahr 1 = echter Ramp-up mit Start- und Ziel-Campern
+# Jahr 2 = ganzes Jahr Ziel-Camper auf Ziel-Auslastung
+# Jahr 3 = Jahr 2 mit leichtem Wachstum
+voller_monatsumsatz_j2 = ziel_camper * zielumsatz_pro_camper * ziel_auslastung
+volle_monatskosten_j2 = ziel_camper * monatliche_kosten_pro_camper + monatliche_fixkosten_gesamt
 
-umsatz_jahr_2 = voller_monatsumsatz * 12
-kosten_jahr_2 = volle_monatskosten * 12
+umsatz_jahr_2 = voller_monatsumsatz_j2 * 12
+kosten_jahr_2 = volle_monatskosten_j2 * 12
 gewinn_jahr_2 = umsatz_jahr_2 - kosten_jahr_2
 
 umsatz_jahr_3 = umsatz_jahr_2 * 1.05
 kosten_jahr_3 = kosten_jahr_2 * 1.03
 gewinn_jahr_3 = umsatz_jahr_3 - kosten_jahr_3
 
+liquiditaet_ende_jahr_2 = liquiditaet_ende_jahr_1 + gewinn_jahr_2
+liquiditaet_ende_jahr_3 = liquiditaet_ende_jahr_2 + gewinn_jahr_3
+
 df_3y = pd.DataFrame({
     "Jahr": ["Jahr 1", "Jahr 2", "Jahr 3"],
-    "Umsatz": [umsatz_jahr_1, umsatz_jahr_2, umsatz_jahr_3],
-    "Kosten": [kosten_jahr_1, kosten_jahr_2, kosten_jahr_3],
-    "Gewinn": [gewinn_jahr_1, gewinn_jahr_2, gewinn_jahr_3]
+    "Ø Camper / Logik": [
+        f"{start_camper}->{ziel_camper}",
+        ziel_camper,
+        ziel_camper
+    ],
+    "Umsatz": [round(umsatz_jahr_1, 0), round(umsatz_jahr_2, 0), round(umsatz_jahr_3, 0)],
+    "Kosten": [round(kosten_jahr_1, 0), round(kosten_jahr_2, 0), round(kosten_jahr_3, 0)],
+    "Gewinn": [round(gewinn_jahr_1, 0), round(gewinn_jahr_2, 0), round(gewinn_jahr_3, 0)],
+    "Liquidität Jahresende": [
+        round(liquiditaet_ende_jahr_1, 0),
+        round(liquiditaet_ende_jahr_2, 0),
+        round(liquiditaet_ende_jahr_3, 0)
+    ]
 })
 
+# KPI Bereich
+st.markdown("---")
+st.subheader("Schlüsselkennzahlen")
 
-# =========================
-# BREAK-EVEN
-# =========================
+k1, k2, k3, k4, k5 = st.columns(5)
+k1.metric("Einmalkosten gesamt", f"€{einmalkosten_gesamt:,.0f}")
+k2.metric("Funding Gap", f"€{funding_gap:,.0f}")
+k3.metric("Mindestliquidität", f"€{min_liquiditaet:,.0f}")
+k4.metric("Gewinn Jahr 1", f"€{gewinn_jahr_1:,.0f}")
+k5.metric("Break-even Camper", f"{break_even_camper:.1f}")
 
-if beitrag_pro_mitglied > 0:
-    break_even_mitglieder = (
-        gesamtkosten_pro_camper + (monatliche_fixkosten_gesamt / anzahl_camper)
-    ) / beitrag_pro_mitglied
+if funding_gap > 0:
+    st.error(
+        f"Die Liquidität fällt unter 0 €. Zusätzlicher Finanzierungsbedarf: ca. €{funding_gap:,.0f}."
+    )
+elif min_liquiditaet < 10000:
+    st.warning(
+        "Die Liquidität bleibt positiv, ist aber knapp. Ein zusätzlicher Sicherheitspuffer wäre sinnvoll."
+    )
 else:
-    break_even_mitglieder = 0
+    st.success(
+        "Die Liquidität bleibt im gesamten 12-Monats-Verlauf stabil positiv."
+    )
 
+# Charts
+st.markdown("---")
+c1, c2 = st.columns(2)
 
-# =========================
-# SZENARIOVERGLEICH
-# =========================
-
-szenarien = {
-    "Worst Case": 15,
-    "Realistisch": 25,
-    "Best Case": 30
-}
-
-szenario_daten = []
-for name, mitglieder_szenario in szenarien.items():
-    umsatz = anzahl_camper * mitglieder_szenario * beitrag_pro_mitglied
-    kosten = (anzahl_camper * gesamtkosten_pro_camper) + monatliche_fixkosten_gesamt
-    gewinn = umsatz - kosten
-    szenario_daten.append({
-        "Szenario": name,
-        "Umsatz": umsatz,
-        "Kosten": kosten,
-        "Gewinn": gewinn
-    })
-
-df_szenario = pd.DataFrame(szenario_daten)
-
-
-# =========================
-# TAB 1 - INTERNE PLANUNG
-# =========================
-
-with tab1:
-    st.subheader("Ergebnisse interne Planung")
-
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Kapitalbedarf Start", f"€{einmalkosten_gesamt:,.0f}")
-    c2.metric("Break-even Mitglieder / Camper", f"{break_even_mitglieder:.1f}")
-    c3.metric("Mindestliquidität", f"€{min_liquiditaet:,.0f}")
-    c4.metric("Funding Gap", f"€{funding_gap:,.0f}")
-
-    c5, c6, c7 = st.columns(3)
-    c5.metric("Umsatz Jahr 1", f"€{umsatz_jahr_1:,.0f}")
-    c6.metric("Kosten Jahr 1", f"€{kosten_jahr_1:,.0f}")
-    c7.metric("Gewinn Jahr 1", f"€{gewinn_jahr_1:,.0f}")
-
-    st.markdown("---")
-
-    if funding_gap > 0:
-        st.error(
-            f"Die Liquidität fällt im Verlauf unter 0 €. "
-            f"Zusätzlicher Finanzierungsbedarf: ca. €{funding_gap:,.0f}."
-        )
-    elif min_liquiditaet < 10000:
-        st.warning(
-            "Die Liquidität bleibt zwar positiv, ist aber knapp. "
-            "Für ein Bankgespräch sollte ein zusätzlicher Sicherheitspuffer eingeplant werden."
-        )
-    else:
-        st.success(
-            "Die Liquidität bleibt im gesamten Verlauf stabil positiv."
-        )
-
-    st.subheader("12-Monats-Plan")
-    st.dataframe(df_12m, use_container_width=True)
-
-    st.subheader("3-Jahres-Plan")
-    st.dataframe(df_3y, use_container_width=True)
-
-
-# =========================
-# TAB 2 - BANK / INVESTOREN
-# =========================
-
-with tab2:
-    st.header("Bank- / Investorensicht")
-
-    k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Kapitalbedarf Start", f"€{einmalkosten_gesamt:,.0f}")
-    k2.metric("Break-even Mitglieder", f"{break_even_mitglieder:.1f}")
-    k3.metric("Gewinn Jahr 1", f"€{gewinn_jahr_1:,.0f}")
-    k4.metric("Funding Gap", f"€{funding_gap:,.0f}")
-
-    st.markdown("---")
-
-    st.subheader("Monatlicher Verlauf: Umsatz, Kosten und Gewinn")
+with c1:
+    st.subheader("12-Monats-Verlauf: Umsatz, Kosten, Gewinn")
     fig1, ax1 = plt.subplots(figsize=(10, 4))
-    ax1.bar(df_12m["Monat"], df_12m["Umsatz"], label="Umsatz")
-    ax1.bar(df_12m["Monat"], df_12m["Kosten"], alpha=0.7, label="Kosten")
-    ax1.plot(df_12m["Monat"], df_12m["Gewinn"], marker="o", label="Gewinn")
+    ax1.bar(df_12m["Monat"], df_12m["Gesamtumsatz"], label="Umsatz")
+    ax1.bar(df_12m["Monat"], df_12m["Gesamtkosten"], alpha=0.7, label="Kosten")
+    ax1.plot(df_12m["Monat"], df_12m["Gewinn / Verlust"], marker="o", label="Gewinn / Verlust")
     ax1.set_ylabel("€")
     ax1.legend()
     st.pyplot(fig1)
 
-    st.subheader("Liquiditätsverlauf über 12 Monate")
+with c2:
+    st.subheader("12-Monats-Verlauf: Liquidität")
     fig2, ax2 = plt.subplots(figsize=(10, 4))
     ax2.plot(df_12m["Monat"], df_12m["Liquidität"], marker="o")
     ax2.axhline(0, linestyle="--")
     ax2.set_ylabel("€")
     st.pyplot(fig2)
 
-    st.subheader("3-Jahres-Plan: Umsatz, Kosten und Gewinn")
-    fig3, ax3 = plt.subplots(figsize=(10, 4))
-    x = range(len(df_3y))
-    ax3.bar([i - 0.25 for i in x], df_3y["Umsatz"], width=0.25, label="Umsatz")
-    ax3.bar(x, df_3y["Kosten"], width=0.25, label="Kosten")
-    ax3.bar([i + 0.25 for i in x], df_3y["Gewinn"], width=0.25, label="Gewinn")
-    ax3.set_xticks(list(x))
-    ax3.set_xticklabels(df_3y["Jahr"])
-    ax3.set_ylabel("€")
-    ax3.legend()
-    st.pyplot(fig3)
+st.subheader("3-Jahres-Plan")
+fig3, ax3 = plt.subplots(figsize=(10, 4))
+x = range(len(df_3y))
+ax3.bar([i - 0.25 for i in x], df_3y["Umsatz"], width=0.25, label="Umsatz")
+ax3.bar(x, df_3y["Kosten"], width=0.25, label="Kosten")
+ax3.bar([i + 0.25 for i in x], df_3y["Gewinn"], width=0.25, label="Gewinn")
+ax3.set_xticks(list(x))
+ax3.set_xticklabels(df_3y["Jahr"])
+ax3.set_ylabel("€")
+ax3.legend()
+st.pyplot(fig3)
 
-    st.subheader("Monatliche Kostenstruktur")
-    kosten_labels = [
-        "Leasing",
-        "Versicherung",
-        "Wartung",
-        "Standort",
-        "Software Camper",
-        "Variable Kosten",
-        "Plattform Fixkosten",
-        "Buchhaltung",
-        "Marketing",
-        "Sonstige"
-    ]
-    kosten_werte = [
-        leasing * anzahl_camper,
-        versicherung * anzahl_camper,
-        wartung * anzahl_camper,
-        standort * anzahl_camper,
-        software_camper * anzahl_camper,
-        variable_kosten * anzahl_camper,
-        plattform_fixkosten,
-        buchhaltung,
-        marketing,
-        sonstige_fixkosten
-    ]
+# Tabellen
+st.markdown("---")
+st.subheader("12-Monats-Plan")
+st.dataframe(df_12m, use_container_width=True)
 
-    fig4, ax4 = plt.subplots(figsize=(7, 7))
-    ax4.pie(kosten_werte, labels=kosten_labels, autopct="%1.1f%%", startangle=90)
-    ax4.axis("equal")
-    st.pyplot(fig4)
-
-    st.subheader("Szenariovergleich Gewinn / Monat")
-    fig5, ax5 = plt.subplots(figsize=(10, 4))
-    ax5.bar(df_szenario["Szenario"], df_szenario["Gewinn"])
-    ax5.axhline(0, linestyle="--")
-    ax5.set_ylabel("€")
-    st.pyplot(fig5)
-
-    st.subheader("Kurze Bewertung")
-
-    if funding_gap > 0:
-        st.error(
-            f"Das Modell zeigt einen zusätzlichen Finanzierungsbedarf von ca. €{funding_gap:,.0f}. "
-            "Vor einem Bankgespräch sollte dieser Betrag aktiv adressiert werden."
-        )
-    elif gewinn_jahr_1 > 0 and min_liquiditaet > 0:
-        st.success(
-            "Das Modell ist unter den aktuellen Annahmen schlüssig darstellbar: "
-            "positiver Ergebnisverlauf, positiver Liquiditätsverlauf und klarer Break-even."
-        )
-    elif gewinn_jahr_1 > 0:
-        st.warning(
-            "Das Modell ist operativ profitabel, zeigt jedoch eine enge Liquidität. "
-            "Ein höherer Startpuffer wäre für das Bankgespräch sinnvoll."
-        )
-    else:
-        st.error(
-            "Das Modell ist unter den aktuellen Annahmen noch nicht überzeugend. "
-            "Preis, Mitgliederaufbau oder Kostenstruktur sollten vor dem Bankgespräch nachgeschärft werden."
-        )
+st.subheader("3-Jahres-Plan Tabelle")
+st.dataframe(df_3y, use_container_width=True)
