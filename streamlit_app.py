@@ -1,44 +1,50 @@
 import streamlit as st
 
-st.set_page_config(page_title="Camper Share Rechner", layout="centered")
+st.set_page_config(page_title="Camper Share Rechner", layout="wide")
 
 st.title("Camper Share Finanzmodell")
 
-st.subheader("Eingaben")
+# Layout
+col_input, col_output = st.columns([1, 1])
 
-camper = st.number_input("Anzahl Camper", min_value=1, value=4)
-mitglieder = st.number_input("Mitglieder pro Camper", min_value=1, value=30)
-preis = st.number_input("Durchschnittlicher Preis pro Mitglied (€)", min_value=0, value=200)
+# INPUTS (links)
+with col_input:
+    st.subheader("Eingaben")
 
-leasing = st.number_input("Leasing pro Camper (€)", min_value=0, value=1100)
-versicherung = st.number_input("Versicherung pro Camper (€)", min_value=0, value=250)
-wartung = st.number_input("Wartung pro Camper (€)", min_value=0, value=200)
-standort = st.number_input("Standort / Infrastruktur (€)", min_value=0, value=200)
-software = st.number_input("Software pro Camper (€)", min_value=0, value=150)
-variable = st.number_input("Variable Kosten pro Camper (€)", min_value=0, value=400)
-plattform = st.number_input("Fixkosten Plattform (€)", min_value=0, value=2000)
+    camper = st.number_input("Anzahl Camper", value=4)
+    mitglieder = st.number_input("Mitglieder pro Camper", value=30)
+    preis = st.number_input("Preis pro Mitglied (€)", value=200)
 
-st.subheader("Ergebnisse")
+    leasing = st.number_input("Leasing (€)", value=1100)
+    versicherung = st.number_input("Versicherung (€)", value=250)
+    wartung = st.number_input("Wartung (€)", value=200)
+    standort = st.number_input("Standort (€)", value=200)
+    software = st.number_input("Software (€)", value=150)
+    variable = st.number_input("Variable Kosten (€)", value=400)
 
+    plattform = st.number_input("Plattform Fixkosten (€)", value=2000)
+
+# BERECHNUNG
 umsatz_pro_camper = mitglieder * preis
 gesamtumsatz = camper * umsatz_pro_camper
 
-fixkosten_pro_camper = leasing + versicherung + wartung + standort + software
-gesamtkosten = camper * (fixkosten_pro_camper + variable) + plattform
+fixkosten = leasing + versicherung + wartung + standort + software
+gesamtkosten = camper * (fixkosten + variable) + plattform
 
-gewinn_monat = gesamtumsatz - gesamtkosten
-gewinn_jahr = gewinn_monat * 12
+gewinn = gesamtumsatz - gesamtkosten
+break_even = (fixkosten + variable + (plattform / camper)) / preis
 
-break_even = (fixkosten_pro_camper + variable + (plattform / camper)) / preis if preis > 0 else 0
+# OUTPUT (rechts)
+with col_output:
+    st.subheader("Ergebnis")
 
-st.metric("Umsatz pro Camper", f"€{umsatz_pro_camper:,.0f}")
-st.metric("Gesamtumsatz", f"€{gesamtumsatz:,.0f}")
-st.metric("Gesamtkosten / Monat", f"€{gesamtkosten:,.0f}")
-st.metric("Gewinn / Monat", f"€{gewinn_monat:,.0f}")
-st.metric("Gewinn / Jahr", f"€{gewinn_jahr:,.0f}")
-st.metric("Break-even Mitglieder pro Camper", f"{break_even:.1f}")
+    st.metric("Monatlicher Gewinn", f"€{gewinn:,.0f}")
+    st.metric("Gesamtumsatz", f"€{gesamtumsatz:,.0f}")
+    st.metric("Gesamtkosten", f"€{gesamtkosten:,.0f}")
+    st.metric("Break-even Mitglieder", f"{break_even:.1f}")
 
-st.subheader("Zusammenfassung")
-
-st.write(f"Fixkosten pro Camper: €{fixkosten_pro_camper:,.0f}")
-st.write(f"Gesamtmitglieder: {camper * mitglieder}")
+    # einfache Ampel
+    if gewinn > 0:
+        st.success("Profitabel")
+    else:
+        st.error("Nicht profitabel")
